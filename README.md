@@ -92,7 +92,7 @@ sudo chown -R "searxng:searxng" "/usr/local/searxng"
 
 # Clone source code and initialize virtual environment
 sudo -H -u searxng -i
-git clone "[https://github.com/searxng/searxng](https://github.com/searxng/searxng)" "/usr/local/searxng/searxng-src"
+git clone "https://github.com/searxng/searxng" "/usr/local/searxng/searxng-src"
 python3 -m venv "/usr/local/searxng/searx-pyenv"
 source "/usr/local/searxng/searx-pyenv/bin/activate"
 
@@ -134,20 +134,21 @@ server:
 
 ```python
 import os
+import sys
 import requests
 import google.generativeai as genai
 
 # Load Gemini API key from environment
 api_key = os.getenv("GEMINI_API_KEY")
 if not api_key:
-    raise ValueError("GEMINI_API_KEY environment variable not found.")
+    raise ValueError("GEMINI_API_KEY environment variable not found. Please export it before running.")
 
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel("gemini-3.5-flash")
 
 def fetch_search_results(query: str) -> str:
     """Queries the local SearXNG node and aggregates result snippets."""
-    url = "[http://127.0.0.1:8888/search](http://127.0.0.1:8888/search)"
+    url = "http://127.0.0.1:8888/search"
     params = {"q": query, "format": "json"}
     headers = {
         "User-Agent": (
@@ -157,19 +158,32 @@ def fetch_search_results(query: str) -> str:
         )
     }
 
-    response = requests.get(url, params=params, headers=headers)
+    try:
+        response = requests.get(url, params=params, headers=headers, timeout=10)
+    except requests.exceptions.ConnectionError:
+        raise ConnectionError("Could not connect to SearXNG at http://127.0.0.1:8888. Please ensure the SearXNG service is running.")
+    except requests.exceptions.Timeout:
+        raise TimeoutError("Connection to SearXNG timed out.")
+
     if response.status_code != 200:
         raise ConnectionError(f"SearXNG returned status {response.status_code}: {response.text}")
 
     data = response.json()
+    results = data.get("results", [])
+    if not results:
+        return ""
+
     context_list = [
-        f"URL: {item.get('url')}\nContent: {item.get('content')}"
-        for item in data.get("results", [])[:5]
+        f"URL: {item.get('url')}\nContent: {item.get('content') or item.get('title') or ''}"
+        for item in results[:5]
     ]
     return "\n\n".join(context_list)
 
 def summarize_with_ai(query: str, context: str) -> str:
     """Submits context data to Gemini for structured generation."""
+    if not context:
+        return "No relevant search results found to answer your query."
+
     prompt = (
         f"Provide a short, compact, direct answer to the user's query using ONLY "
         f"the provided search results. Keep it brief (under 4 bullet points), "
@@ -181,7 +195,14 @@ def summarize_with_ai(query: str, context: str) -> str:
     return response.text
 
 if __name__ == "__main__":
+    print("=" * 60)
+    print("🔍 Aegis: Privacy-Focused RAG Search Engine")
+    print("=" * 60)
     user_query = input("Enter research query: ")
+    if not user_query.strip():
+        print("Query cannot be empty.")
+        sys.exit(0)
+
     print("\n🔍 Querying local SearXNG node...")
     search_context = fetch_search_results(user_query)
 
@@ -214,12 +235,14 @@ model = genai.GenerativeModel("gemini-3.5-flash")
 st.title("🔍 Aegis")
 st.write("Privacy-preserving, real-time RAG search engine powered by SearXNG and Gemini.")
 
+# User query input box
 user_query = st.text_input("Enter research topic:", placeholder="e.g., Explain Zero Trust Architecture")
 
 if st.button("Search & Analyze") and user_query:
     with st.spinner("Executing metasearch and generating summary..."):
         try:
-            url = "[http://127.0.0.1:8888/search](http://127.0.0.1:8888/search)"
+            # 1. Fetch from SearXNG
+            url = "http://127.0.0.1:8888/search"
             params = {"q": user_query, "format": "json"}
             headers = {
                 "User-Agent": (
@@ -229,18 +252,32 @@ if st.button("Search & Analyze") and user_query:
                 )
             }
 
-            response = requests.get(url, params=params, headers=headers)
+            try:
+                response = requests.get(url, params=params, headers=headers, timeout=10)
+            except requests.exceptions.ConnectionError:
+                st.error("Could not connect to SearXNG at http://127.0.0.1:8888. Please ensure the SearXNG service is running.")
+                st.stop()
+            except requests.exceptions.Timeout:
+                st.error("Connection to SearXNG timed out. Please check your backend instance.")
+                st.stop()
+
             if response.status_code != 200:
                 st.error(f"Search backend error: HTTP {response.status_code}")
                 st.stop()
 
             data = response.json()
+            results = data.get("results", [])
+            if not results:
+                st.warning("No search results found. Try modifying your query.")
+                st.stop()
+
             context_list = []
             sources = []
-
-            for item in data.get("results", [])[:5]:
-                context_list.append(f"URL: {item.get('url')}\nContent: {item.get('content')}")
-                sources.append(item.get("url"))
+            for item in results[:5]:
+                content = item.get("content") or item.get("title") or ""
+                context_list.append(f"URL: {item.get('url')}\nContent: {content}")
+                if item.get("url"):
+                    sources.append(item.get("url"))
 
             search_context = "\n\n".join(context_list)
 
@@ -257,9 +294,10 @@ if st.button("Search & Analyze") and user_query:
             st.subheader("🤖 AI Intelligence Summary")
             st.markdown(ai_response.text)
 
-            with st.expander("🔗 View Extracted Source URLs"):
-                for src in set(sources):
-                    st.write(src)
+            if sources:
+                with st.expander("🔗 View Extracted Source URLs"):
+                    for src in dict.fromkeys(sources):
+                        st.write(src)
 
         except Exception as e:
             st.error(f"Pipeline failure: {e}")

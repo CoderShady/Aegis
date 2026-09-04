@@ -1,38 +1,59 @@
 import os
-import requests
+import sys
+
 import google.generativeai as genai
+import requests
 
-# Setup Gemini (Replace with your actual API key)
+# Load Gemini API key from environment
 api_key = os.getenv("GEMINI_API_KEY")
-genai.configure(api_key=api_key)
-model = genai.GenerativeModel('gemini-3.5-flash')
+if not api_key:
+    raise ValueError("GEMINI_API_KEY environment variable not found. Please export it before running.")
 
-def fetch_search_results(query):
-    """Gets raw search data from your local SearXNG."""
+genai.configure(api_key=api_key)
+model = genai.GenerativeModel("gemini-3.5-flash")
+
+def fetch_search_results(query: str) -> str:
+    """Queries the local SearXNG node and aggregates result snippets."""
     url = "http://127.0.0.1:8888/search"
     params = {"q": query, "format": "json"}
-    
-    response = requests.get(url, params=params)
-    
-    # If SearXNG returns an error code or HTML page, print it out for debugging
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/120.0.0.0 Safari/537.36"
+        )
+    }
+
+    try:
+        response = requests.get(url, params=params, headers=headers, timeout=10)
+    except requests.exceptions.ConnectionError:
+        raise ConnectionError("Could not connect to SearXNG at http://127.0.0.1:8888. Please ensure the SearXNG service is running.")
+    except requests.exceptions.Timeout:
+        raise TimeoutError("Connection to SearXNG timed out.")
+
     if response.status_code != 200:
-        raise Exception(f"SearXNG error (Status {response.status_code}): {response.text}")
-        
+        raise ConnectionError(f"SearXNG returned status {response.status_code}: {response.text}")
+
     data = response.json()
-    
-    # Extract text snippets and URLs from the top 5 results
-    context_list = []
-    for item in data.get('results', [])[:5]:
-        context_list.append(f"URL: {item.get('url')}\nInformation: {item.get('content')}")
-        
+    results = data.get("results", [])
+    if not results:
+        return ""
+
+    context_list = [
+        f"URL: {item.get('url')}\nContent: {item.get('content') or item.get('title') or ''}"
+        for item in results[:5]
+    ]
     return "\n\n".join(context_list)
 
-def summarize_with_ai(query, context):
-    """Sends the search data to Gemini to write a summary."""
+def summarize_with_ai(query: str, context: str) -> str:
+    """Submits context data to Gemini for structured generation."""
+    if not context:
+        return "No relevant search results found to answer your query."
+
     prompt = (
-        f"Provide a short compact direct answer to the user's query using ONLY "
-        f"the provided search results. Keep it brief(under 4 bullet points), "
-        f"avoid long paragraphs, and include inline citations using the URLs provided.\n\n "
+        f"Provide a short, compact, direct answer to the user's query using ONLY "
+        f"the provided search results. Keep it brief (under 4 bullet points), "
+        f"avoid unnecessary fluff, and include inline citations using the URLs provided.\n\n"
         f"User Query: {query}\n\n"
         f"Search Results Context:\n{context}"
     )
@@ -40,12 +61,18 @@ def summarize_with_ai(query, context):
     return response.text
 
 if __name__ == "__main__":
-    user_query = input("What would you like to research? ")
-    
-    print("\n🔍 Fetching live data from your SearXNG instance...")
+    print("=" * 60)
+    print("🔍 Aegis: Privacy-Focused RAG Search Engine")
+    print("=" * 60)
+    user_query = input("Enter research query: ")
+    if not user_query.strip():
+        print("Query cannot be empty.")
+        sys.exit(0)
+
+    print("\n🔍 Querying local SearXNG node...")
     search_context = fetch_search_results(user_query)
-    
-    print("🧠 Reading data and generating AI summary...\n")
-    print("-" * 50)
+
+    print("🧠 Generating intelligence summary via Gemini...\n")
+    print("-" * 60)
     print(summarize_with_ai(user_query, search_context))
-    print("-" * 50)
+    print("-" * 60)
