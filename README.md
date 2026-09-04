@@ -143,7 +143,7 @@ if not api_key:
     raise ValueError("GEMINI_API_KEY environment variable not found.")
 
 genai.configure(api_key=api_key)
-model = genai.GenerativeModel("gemini-2.5-flash")
+model = genai.GenerativeModel("gemini-3.5-flash")
 
 def fetch_search_results(query: str) -> str:
     """Queries the local SearXNG node and aggregates result snippets."""
@@ -209,7 +209,7 @@ if not api_key:
     st.stop()
 
 genai.configure(api_key=api_key)
-model = genai.GenerativeModel("gemini-2.5-flash")
+model = genai.GenerativeModel("gemini-3.5-flash")
 
 st.title("🔍 Aegis")
 st.write("Privacy-preserving, real-time RAG search engine powered by SearXNG and Gemini.")
