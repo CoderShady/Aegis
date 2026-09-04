@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.env
+.venv/
+env/
+*.key
+*.pem
+.env.*
+.streamlit/
