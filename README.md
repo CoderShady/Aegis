@@ -137,16 +137,16 @@ pip install -e .
 ```python
 import os
 import sys
+
+from google import genai
 import requests
-import google.generativeai as genai
 
 # Load Gemini API key from environment
 api_key = os.getenv("GEMINI_API_KEY")
 if not api_key:
     raise ValueError("GEMINI_API_KEY environment variable not found. Please export it before running.")
 
-genai.configure(api_key=api_key)
-model = genai.GenerativeModel("gemini-3.5-flash")
+client = genai.Client(api_key=api_key)
 
 def fetch_search_results(query: str) -> str:
     """Queries the local SearXNG node and aggregates result snippets."""
@@ -193,7 +193,10 @@ def summarize_with_ai(query: str, context: str) -> str:
         f"User Query: {query}\n\n"
         f"Search Results Context:\n{context}"
     )
-    response = model.generate_content(prompt)
+    response = client.models.generate_content(
+        model="gemini-3.5-flash",
+        contents=prompt
+    )
     return response.text
 
 if __name__ == "__main__":
@@ -218,9 +221,10 @@ if __name__ == "__main__":
 
 ```python
 import os
-import streamlit as st
+
+from google import genai
 import requests
-import google.generativeai as genai
+import streamlit as st
 
 # Configure page settings
 st.set_page_config(page_title="Aegis AI", page_icon="🔍", layout="centered")
@@ -231,8 +235,7 @@ if not api_key:
     st.error("Missing GEMINI_API_KEY environment variable. Export it before running.")
     st.stop()
 
-genai.configure(api_key=api_key)
-model = genai.GenerativeModel("gemini-3.5-flash")
+client = genai.Client(api_key=api_key)
 
 st.title("🔍 Aegis")
 st.write("Privacy-preserving, real-time RAG search engine powered by SearXNG and Gemini.")
@@ -291,7 +294,10 @@ if st.button("Search & Analyze") and user_query:
                 f"Search Results Context:\n{search_context}"
             )
 
-            ai_response = model.generate_content(prompt)
+            ai_response = client.models.generate_content(
+                model="gemini-3.5-flash",
+                contents=prompt
+            )
 
             st.subheader("🤖 AI Intelligence Summary")
             st.markdown(ai_response.text)

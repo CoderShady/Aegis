@@ -1,8 +1,8 @@
 import os
 
-import google.generativeai as genai
 import requests
 import streamlit as st
+from google import genai
 
 # Configure page settings
 st.set_page_config(page_title="Aegis AI", page_icon="🔍", layout="centered")
@@ -13,8 +13,7 @@ if not api_key:
     st.error("Missing GEMINI_API_KEY environment variable. Export it before running.")
     st.stop()
 
-genai.configure(api_key=api_key)
-model = genai.GenerativeModel("gemini-3.5-flash")
+client = genai.Client(api_key=api_key)
 
 st.title("🔍 Aegis")
 st.write("Privacy-preserving, real-time RAG search engine powered by SearXNG and Gemini.")
@@ -75,7 +74,10 @@ if st.button("Search & Analyze") and user_query:
                 f"Search Results Context:\n{search_context}"
             )
             
-            ai_response = model.generate_content(prompt)
+            ai_response = client.models.generate_content(
+                model="gemini-3.5-flash",
+                contents=prompt
+            )
             
             # 3. Display Results on UI
             st.subheader("🤖 AI Intelligence Summary")

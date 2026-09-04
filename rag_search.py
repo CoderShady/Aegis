@@ -1,16 +1,15 @@
 import os
 import sys
 
-import google.generativeai as genai
 import requests
+from google import genai
 
 # Load Gemini API key from environment
 api_key = os.getenv("GEMINI_API_KEY")
 if not api_key:
     raise ValueError("GEMINI_API_KEY environment variable not found. Please export it before running.")
 
-genai.configure(api_key=api_key)
-model = genai.GenerativeModel("gemini-3.5-flash")
+client = genai.Client(api_key=api_key)
 
 def fetch_search_results(query: str) -> str:
     """Queries the local SearXNG node and aggregates result snippets."""
@@ -57,7 +56,10 @@ def summarize_with_ai(query: str, context: str) -> str:
         f"User Query: {query}\n\n"
         f"Search Results Context:\n{context}"
     )
-    response = model.generate_content(prompt)
+    response = client.models.generate_content(
+        model="gemini-3.5-flash",
+        contents=prompt
+    )
     return response.text
 
 if __name__ == "__main__":
