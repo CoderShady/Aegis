@@ -1,4 +1,4 @@
-# 🔍 AegisSearch: Privacy-Focused RAG Search Engine
+# 🔍 Aegis: Privacy-Focused RAG Search Engine
 
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://www.python.org/)
 [![Frontend](https://img.shields.io/badge/Frontend-Streamlit-red.svg)](https://streamlit.io/)
@@ -6,7 +6,7 @@
 [![AI](https://img.shields.io/badge/AI-Google_Gemini_API-orange.svg)](https://aistudio.google.com/)
 [![License](https://img.shields.io/badge/License-MIT-purple.svg)](LICENSE)
 
-An enterprise-grade, self-hosted Retrieval-Augmented Generation (RAG) platform. AegisSearch queries live web data locally through an isolated SearXNG metasearch instance and synthesizes concise, source-cited intelligence briefs using the Gemini API.
+An enterprise-grade, self-hosted Retrieval-Augmented Generation (RAG) platform. Aegis queries live web data locally through an isolated SearXNG metasearch instance and synthesizes concise, source-cited intelligence briefs using the Gemini API.
 
 ---
 
@@ -14,7 +14,7 @@ An enterprise-grade, self-hosted Retrieval-Augmented Generation (RAG) platform. 
 
 Commercial search engines monetize user telemetry, log search histories, and build digital tracking profiles. Meanwhile, standard standalone AI chatbots suffer from hallucinations and outdated knowledge cutoffs.
 
-**AegisSearch** solves both challenges using a privacy-first hybrid architecture:
+**Aegis** solves both challenges using a privacy-first hybrid architecture:
 * **Zero Telemetry Tracking:** Self-hosts a private SearXNG metasearch instance isolated from commercial profiling and ad networks.
 * **Ground-Truth AI Synthesis:** Retrieves real-time web results via local JSON streams and passes formatted context into an LLM for structured, cited synthesis.
 * **Hybrid Cloud Security:** Maintains search aggregation locally on an isolated subnet while offloading inference to cloud endpoints without leaking user tracking identifiers.
@@ -200,7 +200,7 @@ import requests
 import google.generativeai as genai
 
 # Configure page settings
-st.set_page_config(page_title="AegisSearch AI", page_icon="🔍", layout="centered")
+st.set_page_config(page_title="Aegis AI", page_icon="🔍", layout="centered")
 
 # Initialize Gemini API
 api_key = os.getenv("GEMINI_API_KEY")
@@ -211,7 +211,7 @@ if not api_key:
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel("gemini-2.5-flash")
 
-st.title("🔍 AegisSearch")
+st.title("🔍 Aegis")
 st.write("Privacy-preserving, real-time RAG search engine powered by SearXNG and Gemini.")
 
 user_query = st.text_input("Enter research topic:", placeholder="e.g., Explain Zero Trust Architecture")
