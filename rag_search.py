@@ -14,7 +14,7 @@ model = genai.GenerativeModel("gemini-3.5-flash")
 
 def fetch_search_results(query: str) -> str:
     """Queries the local SearXNG node and aggregates result snippets."""
-    url = "http://127.0.0.1:8888/search"
+    url = os.getenv("SEARXNG_URL", "http://127.0.0.1:8888/search")
     params = {"q": query, "format": "json"}
     headers = {
         "User-Agent": (

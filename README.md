@@ -150,7 +150,7 @@ model = genai.GenerativeModel("gemini-3.5-flash")
 
 def fetch_search_results(query: str) -> str:
     """Queries the local SearXNG node and aggregates result snippets."""
-    url = "http://127.0.0.1:8888/search"
+    url = os.getenv("SEARXNG_URL", "http://127.0.0.1:8888/search")
     params = {"q": query, "format": "json"}
     headers = {
         "User-Agent": (
@@ -244,7 +244,7 @@ if st.button("Search & Analyze") and user_query:
     with st.spinner("Executing metasearch and generating summary..."):
         try:
             # 1. Fetch from SearXNG
-            url = "http://127.0.0.1:8888/search"
+            url = os.getenv("SEARXNG_URL", "http://127.0.0.1:8888/search")
             params = {"q": user_query, "format": "json"}
             headers = {
                 "User-Agent": (
@@ -309,29 +309,47 @@ if st.button("Search & Analyze") and user_query:
 
 ## 🏃 Execution Guide
 
-### 1. Start SearXNG Backend
-* **If using Docker (Option A)**: The container is already running in the background. Verify anytime via `docker ps`.
-* **If using Bare-Metal (Option B)**:
-  ```bash
-  sudo -H -u searxng -i
-  source "/usr/local/searxng/searx-pyenv/bin/activate"
-  export SEARXNG_SETTINGS_PATH="/etc/searxng/settings.yml"
-  python -m searx.webapp
-  ```
-
-### 2. Run Aegis Client Interface
-From your cloned `Aegis` directory (with your `venv` active):
+### Option 1: One-Command Run via Docker Compose (Easiest)
+Spin up both SearXNG and the Aegis web application together in containers:
 
 ```bash
-# Export your Gemini API Key
 export GEMINI_API_KEY="your_gemini_api_key_here"
-# (On Windows PowerShell: $env:GEMINI_API_KEY="your_gemini_api_key_here")
-
-# Option 1: Run Terminal CLI
-python rag_search.py
-
-# Option 2: Run Streamlit Web Dashboard
-streamlit run app.py
+docker compose up
 ```
 
-Access the Streamlit web dashboard via `http://localhost:8501` (or your machine's private network IP, e.g., `http://192.168.x.x:8501`).
+### Option 2: One-Command Run via Launcher Script (`run.sh`)
+If running on Linux/Ubuntu or macOS natively:
+
+```bash
+chmod +x run.sh
+export GEMINI_API_KEY="your_gemini_api_key_here"
+./run.sh
+```
+*This script automatically checks/launches SearXNG in the background, starts Streamlit in the foreground, and safely terminates both on `Ctrl+C`.*
+
+### Option 3: Manual Multi-Terminal Execution
+If you prefer managing processes separately in two terminal tabs:
+
+**Terminal 1 (SearXNG Backend):**
+```bash
+sudo -H -u searxng -i
+source "/usr/local/searxng/searx-pyenv/bin/activate"
+export SEARXNG_SETTINGS_PATH="/etc/searxng/settings.yml"
+python -m searx.webapp
+```
+
+**Terminal 2 (Aegis Client):**
+```bash
+source venv/bin/activate
+export GEMINI_API_KEY="your_gemini_api_key_here"
+
+# For Web UI:
+streamlit run app.py
+
+# For Terminal CLI:
+python rag_search.py
+```
+
+---
+
+Access the Streamlit web dashboard at `http://localhost:8501` (or your server's network IP, e.g., `http://192.168.x.x:8501`).

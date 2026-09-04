@@ -26,7 +26,7 @@ if st.button("Search & Analyze") and user_query:
     with st.spinner("Executing metasearch and generating summary..."):
         try:
             # 1. Fetch from SearXNG
-            url = "http://127.0.0.1:8888/search"
+            url = os.getenv("SEARXNG_URL", "http://127.0.0.1:8888/search")
             params = {"q": user_query, "format": "json"}
             headers = {
                 "User-Agent": (

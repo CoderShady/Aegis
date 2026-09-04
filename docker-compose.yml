@@ -1,0 +1,21 @@
+﻿services:
+  searxng:
+    image: searxng/searxng:latest
+    container_name: aegis-searxng
+    ports:
+      - "8888:8080"
+    volumes:
+      - ./config/settings.yml:/etc/searxng/settings.yml:ro
+    restart: unless-stopped
+
+  aegis:
+    build: .
+    container_name: aegis-web
+    ports:
+      - "8501:8501"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - SEARXNG_URL=http://searxng:8080/search
+    depends_on:
+      - searxng
+    restart: unless-stopped
