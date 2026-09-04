@@ -62,68 +62,70 @@ Commercial search engines monetize user telemetry, log search histories, and bui
 ## 🚀 Installation & Local Deployment
 
 ### 1. Prerequisites
-* Ubuntu 22.04 LTS or newer
 * Python 3.11+
 * Active [Google AI Studio](https://aistudio.google.com/) API Key
+* Docker **(Recommended)** OR Ubuntu 22.04 LTS+ for bare-metal setup
 
-### 2. System Dependencies
-Install the required system libraries, build tools, and environment packages:
+### 2. Clone Repository & Setup Environment
+Clone Aegis and install dependencies:
 
 ```bash
-sudo apt-get update && sudo apt-get install -y \
-    python3-dev python3-babel python3-venv python-is-python3 \
-    uwsgi uwsgi-plugin-python3 git build-essential \
-    libxslt-dev zlib1g-dev libffi-dev libssl-dev
+git clone https://github.com/CoderShady/Aegis.git
+cd Aegis
+
+# Create and activate virtual environment
+python3 -m venv venv
+source venv/bin/activate  # On Windows: .\venv\Scripts\activate
+
+# Install dependencies
+pip install --upgrade pip
+pip install -r requirements.txt
 ```
 
-### 3. Dedicated Service User & SearXNG Setup
-Create an isolated system user and configure the virtual environment:
+---
+
+### 3. Launch SearXNG Backend
+
+Choose **Option A (Docker - Recommended)** for instant 2-minute setup, or **Option B** for manual bare-metal Linux installation:
+
+#### Option A: Docker (Recommended - Fastest & Cross-Platform)
+Run SearXNG bound to port `8888` using Aegis's pre-configured `config/settings.yml`:
 
 ```bash
-# Create service user
+docker run -d --name aegis-searxng \
+  -p 8888:8080 \
+  -v "$(pwd)/config/settings.yml:/etc/searxng/settings.yml:ro" \
+  searxng/searxng:latest
+```
+
+#### Option B: Bare-Metal Linux (Ubuntu 22.04 LTS+)
+If you prefer building SearXNG directly from source on Ubuntu:
+
+```bash
+# 1. Install system build tools
+sudo apt-get update && sudo apt-get install -y \
+    python3-dev python3-babel python3-venv git build-essential \
+    libxslt-dev zlib1g-dev libffi-dev libssl-dev
+
+# 2. Create isolated service user and directories
 sudo useradd --shell /bin/bash --system \
     --home-dir "/usr/local/searxng" \
     --comment 'Privacy-respecting metasearch engine' \
     searxng
-
-# Set directory permissions
-sudo mkdir -p "/usr/local/searxng"
+sudo mkdir -p "/usr/local/searxng" "/etc/searxng"
 sudo chown -R "searxng:searxng" "/usr/local/searxng"
 
-# Clone source code and initialize virtual environment
+# 3. Copy Aegis SearXNG configuration
+sudo cp config/settings.yml /etc/searxng/settings.yml
+
+# 4. Clone and install SearXNG in a dedicated virtual environment
 sudo -H -u searxng -i
 git clone "https://github.com/searxng/searxng" "/usr/local/searxng/searxng-src"
 python3 -m venv "/usr/local/searxng/searx-pyenv"
 source "/usr/local/searxng/searx-pyenv/bin/activate"
-
-# Install project dependencies
+cd "/usr/local/searxng/searxng-src"
 pip install --upgrade pip
-pip install requests google-generativeai streamlit
-```
-
-### 4. SearXNG Configuration
-Edit `/etc/searxng/settings.yml` to enable JSON format output and configure server binding:
-
-```yaml
-use_default_settings: true
-
-general:
-  debug: false
-  instance_name: "SearXNG-SecureNode"
-
-search:
-  safe_search: 2
-  autocomplete: 'duckduckgo'
-  formats:
-    - html
-    - json
-
-server:
-  port: 8888
-  bind_address: "0.0.0.0"
-  secret_key: "GENERATE_A_RANDOM_HEX_KEY"
-  limiter: false
-  image_proxy: true
+pip install -e .
 ```
 
 ---
@@ -307,33 +309,29 @@ if st.button("Search & Analyze") and user_query:
 
 ## 🏃 Execution Guide
 
-Run the pipeline using two terminal instances:
+### 1. Start SearXNG Backend
+* **If using Docker (Option A)**: The container is already running in the background. Verify anytime via `docker ps`.
+* **If using Bare-Metal (Option B)**:
+  ```bash
+  sudo -H -u searxng -i
+  source "/usr/local/searxng/searx-pyenv/bin/activate"
+  export SEARXNG_SETTINGS_PATH="/etc/searxng/settings.yml"
+  python -m searx.webapp
+  ```
 
-### Terminal 1: Launch SearXNG Backend
-```bash
-sudo -H -u searxng -i
-source "/usr/local/searxng/searx-pyenv/bin/activate"
-export SEARXNG_SETTINGS_PATH="/etc/searxng/settings.yml"
-python -m searx.webapp
-```
+### 2. Run Aegis Client Interface
+From your cloned `Aegis` directory (with your `venv` active):
 
-### Terminal 2: Run Client Interface
 ```bash
-sudo -H -u searxng -i
-source "/usr/local/searxng/searx-pyenv/bin/activate"
+# Export your Gemini API Key
 export GEMINI_API_KEY="your_gemini_api_key_here"
+# (On Windows PowerShell: $env:GEMINI_API_KEY="your_gemini_api_key_here")
 
-# For CLI mode:
+# Option 1: Run Terminal CLI
 python rag_search.py
 
-# For Web UI:
+# Option 2: Run Streamlit Web Dashboard
 streamlit run app.py
 ```
 
-Access the Streamlit web dashboard via `http://localhost:8501` (or your VM's private network IP, e.g., `http://192.168.x.x:8501`).
-
----
-
-## 📝 Engineering & Debugging Log
-
-Detailed troubleshooting documentation—including Linux virtual environment permission conflicts (PEP 668), WAF bot rate-limiting (`HTTP 429`), JSON stream decoding errors, and Gemini API model version updates—is recorded in [`DEV_LOG.md`](DEV_LOG.md).
+Access the Streamlit web dashboard via `http://localhost:8501` (or your machine's private network IP, e.g., `http://192.168.x.x:8501`).
