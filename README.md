@@ -42,7 +42,7 @@ Commercial search engines monetize user telemetry, log search histories, and bui
                             │
             (Real-Time Context + Formatted Prompt)
                             ▼
-                 [ Gemini 2.5 Flash API ]
+                 [ Gemini 3.5 Flash API ]
                             │
                             ▼
          [ Structured Summary + Verified Citations ]
