@@ -3,11 +3,8 @@ import os
 import requests
 import streamlit as st
 from google import genai
-
-# Configure page settings
 st.set_page_config(page_title="Aegis AI", page_icon="🔍", layout="centered")
 
-# Initialize Gemini API
 api_key = os.getenv("GEMINI_API_KEY")
 if not api_key:
     st.error("Missing GEMINI_API_KEY environment variable. Export it before running.")
@@ -18,13 +15,11 @@ client = genai.Client(api_key=api_key)
 st.title("🔍 Aegis")
 st.write("Privacy-preserving, real-time RAG search engine powered by SearXNG and Gemini.")
 
-# User query input box
 user_query = st.text_input("Enter research topic:", placeholder="e.g., Explain Zero Trust Architecture")
 
 if st.button("Search & Analyze") and user_query:
     with st.spinner("Executing metasearch and generating summary..."):
         try:
-            # 1. Fetch from SearXNG
             url = os.getenv("SEARXNG_URL", "http://127.0.0.1:8888/search")
             params = {"q": user_query, "format": "json"}
             headers = {
@@ -65,7 +60,6 @@ if st.button("Search & Analyze") and user_query:
                 
             search_context = "\n\n".join(context_list)
             
-            # 2. Summarize with Gemini
             prompt = (
                 f"Provide a structured, compact answer to the user's query using ONLY "
                 f"the provided search results context. Keep it clear, use bullet points if helpful, "
@@ -79,7 +73,6 @@ if st.button("Search & Analyze") and user_query:
                 contents=prompt
             )
             
-            # 3. Display Results on UI
             st.subheader("🤖 AI Intelligence Summary")
             st.markdown(ai_response.text)
             
@@ -88,5 +81,5 @@ if st.button("Search & Analyze") and user_query:
                     for src in dict.fromkeys(sources):
                         st.write(src)
                     
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             st.error(f"Pipeline failure: {e}")
