@@ -1,10 +1,8 @@
 import os
 import sys
-
 import requests
 from google import genai
 
-# Load Gemini API key from environment
 api_key = os.getenv("GEMINI_API_KEY")
 if not api_key:
     raise ValueError("GEMINI_API_KEY environment variable not found. Please export it before running.")
