@@ -1,6 +1,3 @@
-﻿#!/usr/bin/env bash
-# Aegis Unified Launcher - Runs SearXNG and Streamlit together
-
 set -e
 
 SEARXNG_PID=""
@@ -16,7 +13,6 @@ cleanup() {
 
 trap cleanup SIGINT SIGTERM EXIT
 
-# 1. Check if SearXNG is already running on port 8888
 if curl -s "http://127.0.0.1:8888" >/dev/null 2>&1; then
     echo "✅ SearXNG backend is already active on http://127.0.0.1:8888"
 else
@@ -31,6 +27,5 @@ else
     sleep 2
 fi
 
-# 2. Start Streamlit Dashboard
 echo "🌐 Launching Aegis Streamlit Web Interface..."
 streamlit run app.py
